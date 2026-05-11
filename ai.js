@@ -1,6 +1,4 @@
 // AI-powered quiz question generator.
-// Supports four providers: "anthropic", "openai", "deepseek", and "mock".
-
 const PROVIDER = (process.env.AI_PROVIDER || 'mock').toLowerCase();
 
 const SYSTEM_PROMPT = `You are a fun, fair quiz writer. Generate multiple-choice trivia questions.
@@ -12,27 +10,18 @@ function userPrompt({ topic, count, difficulty }) {
   return `Write ${count} multiple-choice quiz questions about: ${topic}.
 Difficulty: ${difficulty}.
 Return JSON in EXACTLY this shape:
-{
-  "questions": [
-    {
-      "question": "string",
-      "options": ["A", "B", "C", "D"],
-      "correctIndex": 0
-    }
-  ]
-}
+{ "questions": [ { "question": "string", "options": ["A","B","C","D"], "correctIndex": 0 } ] }
 The "correctIndex" must be an integer 0-3 indicating which option is correct.
 Mix up which position is correct across questions.`;
 }
 
-// ---------- Mock provider (no API key required) ----------
 function mockQuestions({ topic, count }) {
   const bank = [
     { question: `Which of these is most associated with ${topic}?`, options: ['The Apollo program', 'The printing press', 'The Renaissance', 'The Cold War'], correctIndex: 2 },
     { question: `True or false: ${topic} has a Wikipedia page.`, options: ['Definitely true', 'Probably true', 'Probably false', 'Definitely false'], correctIndex: 0 },
     { question: `If you had to summarize ${topic} in one word, which fits best?`, options: ['Fascinating', 'Tedious', 'Forgotten', 'Imaginary'], correctIndex: 0 },
     { question: `Which century saw the biggest developments in ${topic}?`, options: ['15th century', '18th century', '20th century', '21st century'], correctIndex: 2 },
-    { question: `A friend asks you about ${topic}. What is the safest first answer?`, options: ['Let me look that up', 'It is overrated', 'I invented it', 'It does not exist'], correctIndex: 0 } ,
+    { question: `A friend asks you about ${topic}. What is the safest first answer?`, options: ['Let me look that up', 'It is overrated', 'I invented it', 'It does not exist'], correctIndex: 0 },
     { question: `Pick the most plausible fact about ${topic}:`, options: ['It is studied in universities', 'It was outlawed worldwide in 1923', 'It only exists on Mars', 'It was invented yesterday'], correctIndex: 0 },
     { question: `Which discipline most often studies ${topic}?`, options: ['History or science', 'Astrology', 'Origami', 'Competitive eating'], correctIndex: 0 },
     { question: `Which of these is NOT typically related to ${topic}?`, options: ['Books', 'Research', 'Time travel paradoxes', 'Conversations'], correctIndex: 2 },
@@ -42,24 +31,19 @@ function mockQuestions({ topic, count }) {
   return out;
 }
 
-// ---------- Anthropic (Claude) ----------
 async function anthropicQuestions(opts) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY is not set');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5', max_tokens: 2048, system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt(opts) }],
-    }),
+    body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2048, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt(opts) }] }),
   });
   if (!res.ok) { const text = await res.text(); throw new Error(`Anthropic API error ${res.status}: ${text}`); }
   const data = await res.json();
   return parseQuestionJson(data?.content?.[0]?.text || '');
 }
 
-// ---------- DeepSeek ----------
 async function deepseekQuestions(opts) {
   const key = process.env.DEEPSEEK_API_KEY;
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set');
@@ -80,7 +64,6 @@ async function deepseekQuestions(opts) {
   return parseQuestionJson(data?.choices?.[0]?.message?.content || '');
 }
 
-// ---------- OpenAI ----------
 async function openaiQuestions(opts) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY is not set');
