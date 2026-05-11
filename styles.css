@@ -449,3 +449,63 @@ input:focus, select:focus { border-color: var(--bg-1); }
   .bar-track { height: 24px; }
   .music-btn { width: 38px; height: 38px; font-size: 18px; }
 }
+
+/* ============================================================
+   Chanoot! branding — prominent gradient logo + animation
+   ============================================================ */
+.brand.chanoot h1 {
+  font-family: -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: clamp(48px, 9vw, 92px);
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -2px;
+  background: linear-gradient(135deg, #ffeb3b 0%, #ff9100 30%, #ff3d00 60%, #d500f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+  font-weight: 900;
+  animation: chanootWobble 4.5s ease-in-out infinite;
+  transform-origin: center;
+}
+.brand.chanoot h1 .oot {
+  background: linear-gradient(135deg, #00e5ff 0%, #2979ff 50%, #d500f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand.chanoot h1 .bang {
+  color: #ffeb3b;
+  -webkit-text-fill-color: #ffeb3b;
+  background: none;
+  display: inline-block;
+  animation: chanootBang 1.2s ease-in-out infinite;
+  text-shadow: 0 0 18px rgba(255, 235, 59, 0.9);
+}
+.brand.chanoot .slogan {
+  color: white;
+  opacity: 0.92;
+  font-size: clamp(14px, 2.4vw, 20px);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin: 6px 0 0;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+.brand.chanoot.small h1 {
+  font-size: clamp(36px, 6vw, 56px);
+  animation: none;
+}
+.brand.chanoot.small .slogan {
+  font-size: 14px;
+}
+
+@keyframes chanootWobble {
+  0%, 100% { transform: rotate(-1deg) scale(1); }
+  50%      { transform: rotate(1deg) scale(1.02); }
+}
+@keyframes chanootBang {
+  0%, 100% { transform: scale(1) rotate(0); }
+  25%      { transform: scale(1.25) rotate(-8deg); }
+  50%      { transform: scale(1) rotate(8deg); }
+  75%      { transform: scale(1.15) rotate(-4deg); }
+}

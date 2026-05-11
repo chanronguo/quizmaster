@@ -1,7 +1,7 @@
 {
   "name": "quizmaster",
   "version": "1.0.0",
-  "description": "A Kahoot-style live quiz website with AI-generated questions.",
+  "description": "A Kahoot-style live quiz website with AI-generated questions. Host shows questions on a big screen; players join from their phones with a room code.",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {

@@ -1,4 +1,6 @@
-# QuizMaster
+# Chanoot!
+
+> Live AI quizzes with friends
 
 A Kahoot-style **live quiz website** with AI-generated questions. The host opens the site on a big screen; players join from any phone or laptop browser with a room code. No app install needed.
 
