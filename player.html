@@ -51,11 +51,47 @@
     </section>
 
     <!-- SCREEN 5: Result for this round -->
-    <section id="screen-result" class="hidden">
+    <section id="screen-result" class="hidden" style="width:100%; display:flex; flex-direction:column; gap:14px; align-items:center;">
       <div class="result-banner" id="result-banner">
         <h2 id="result-title"></h2>
         <p id="result-sub"></p>
-        <p class="muted">Rank: <strong id="result-rank">--</strong> &nbsp;•&nbsp; Score: <strong id="result-score">0</strong></p>
+        <p class="muted">Score: <strong id="result-score">0</strong></p>
+      </div>
+
+      <!-- Rank context card -->
+      <div id="rank-card" class="rank-card hidden">
+        <div class="rank-row above hidden" id="rank-above">
+          <div class="rank-left">
+            <span class="rank-num" id="rank-above-rank">#--</span>
+            <span class="rank-name" id="rank-above-name"></span>
+          </div>
+          <div class="rank-right">
+            <div class="rank-score" id="rank-above-score">0 pts</div>
+            <div class="rank-diff" id="rank-above-diff"></div>
+          </div>
+        </div>
+
+        <div class="rank-row me" id="rank-me">
+          <div class="rank-left">
+            <span class="rank-num me-rank" id="rank-me-rank">#--</span>
+            <span class="rank-name" id="rank-me-name">YOU</span>
+            <span class="rank-movement" id="rank-movement">—</span>
+          </div>
+          <div class="rank-right">
+            <div class="rank-score" id="rank-me-score">0 pts</div>
+          </div>
+        </div>
+
+        <div class="rank-row below hidden" id="rank-below">
+          <div class="rank-left">
+            <span class="rank-num" id="rank-below-rank">#--</span>
+            <span class="rank-name" id="rank-below-name"></span>
+          </div>
+          <div class="rank-right">
+            <div class="rank-score" id="rank-below-score">0 pts</div>
+            <div class="rank-diff" id="rank-below-diff"></div>
+          </div>
+        </div>
       </div>
     </section>
 

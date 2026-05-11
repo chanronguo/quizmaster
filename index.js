@@ -18,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ---------- In-memory room store ----------
 // rooms[code] = {
@@ -58,6 +58,23 @@ function leaderboard(room) {
     .sort((a, b) => b.score - a.score);
 }
 
+// Compute rank context for a player: their rank, neighbour above, neighbour below.
+function rankContextFor(room, playerId) {
+  const sorted = leaderboard(room);
+  const idx = sorted.findIndex((p) => p.id === playerId);
+  if (idx < 0) return null;
+  const me = sorted[idx];
+  return {
+    rank: idx + 1,
+    total: sorted.length,
+    me: { name: me.name, score: me.score },
+    above: idx > 0 ? { rank: idx, name: sorted[idx - 1].name, score: sorted[idx - 1].score } : null,
+    below: idx < sorted.length - 1
+      ? { rank: idx + 2, name: sorted[idx + 1].name, score: sorted[idx + 1].score }
+      : null,
+  };
+}
+
 function clearRoomTimers(room) {
   if (room.timers?.question) clearTimeout(room.timers.question);
   if (room.timers?.reveal) clearTimeout(room.timers.reveal);
@@ -88,9 +105,14 @@ function startNextQuestion(code) {
   room.status = 'question';
   room.questionStartedAt = Date.now();
 
-  // Reset per-question answer log on each player so we know who answered
+  // Reset per-question answer log on each player so we know who answered.
+  // Also snapshot each player's rank at the START of this question so we can show
+  // how their rank changed after they answer.
+  const sortedAtStart = leaderboard(room);
   Object.values(room.players).forEach((p) => {
     p.currentAnswer = null;
+    const idx = sortedAtStart.findIndex((x) => x.id === p.id);
+    p.questionStartRank = idx + 1;
   });
 
   const payload = {
@@ -130,17 +152,12 @@ function revealAnswer(code) {
     leaderboard: leaderboard(room).slice(0, 10),
   });
 
-  // Tell each player whether they got it right
+  // Send each player a FINAL rank update so their rank-context card reflects
+  // everyone's answers (including players who answered after them).
   Object.values(room.players).forEach((p) => {
-    const ans = p.currentAnswer;
-    const correct = !!ans && ans.optionIndex === q.correctIndex;
-    io.to(p.id).emit('player:result', {
+    io.to(p.id).emit('player:rankUpdate', {
       index: room.currentIndex,
-      correct,
-      correctIndex: q.correctIndex,
-      yourOption: ans ? ans.optionIndex : null,
-      score: p.score,
-      rank: leaderboard(room).findIndex((x) => x.id === p.id) + 1,
+      rankContext: rankContextFor(room, p.id),
     });
   });
 
@@ -288,6 +305,20 @@ io.on('connection', (socket) => {
     player.score += points;
 
     ack?.({ ok: true, points });
+
+    // INSTANT result for the answering player — show correct/wrong + rank context.
+    const rankContext = rankContextFor(room, socket.id);
+    io.to(socket.id).emit('player:result', {
+      index: room.currentIndex,
+      correct,
+      points,
+      score: player.score,
+      yourOption: optionIndex,
+      correctIndex: q.correctIndex,
+      correctOption: q.options[q.correctIndex],
+      prevRank: player.questionStartRank || rankContext.rank,
+      rankContext,
+    });
 
     // Tell host how many have answered (for "X of Y answered")
     const totalPlayers = Object.keys(room.players).length;
