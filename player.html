@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Play — QuizMaster</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="player-mode">
+  <div class="center-wrap" id="root">
+
+    <!-- SCREEN 1: Join -->
+    <section id="screen-join" class="card">
+      <h2>Join a quiz</h2>
+      <label for="code">Room code</label>
+      <input id="code" type="text" placeholder="ABCDEF" maxlength="8" autocapitalize="characters" autocomplete="off" />
+      <label for="name">Your name</label>
+      <input id="name" type="text" placeholder="Nickname" maxlength="16" autocomplete="off" />
+      <div style="margin-top:18px">
+        <button class="btn" id="btn-join">Join</button>
+      </div>
+      <p class="error" id="join-error"></p>
+    </section>
+
+    <!-- SCREEN 2: Waiting in lobby -->
+    <section id="screen-wait" class="card hidden" style="text-align:center">
+      <h2>You're in! 🎉</h2>
+      <p>Hi <strong id="wait-name"></strong>, waiting for the host to start the game.</p>
+      <p class="muted">Room: <span id="wait-code"></span></p>
+      <div class="spinner" style="margin: 12px auto;"></div>
+    </section>
+
+    <!-- SCREEN 3: Answering -->
+    <section id="screen-answer" class="hidden" style="width:100%; display:flex; flex-direction:column; gap:14px; align-items:center;">
+      <div class="question-bar">
+        <div class="q-meta">
+          <span>Q <strong id="p-index">1</strong> / <span id="p-total">5</span></span>
+          <span id="p-score">Score: 0</span>
+        </div>
+        <h2 id="p-prompt">Pick your answer!</h2>
+        <div class="timer" id="p-timer">--</div>
+      </div>
+      <div class="answer-grid" id="answer-grid"></div>
+    </section>
+
+    <!-- SCREEN 4: Waiting after answer -->
+    <section id="screen-waited" class="card hidden" style="text-align:center">
+      <h2 id="waited-title">Answer locked in ✓</h2>
+      <p class="muted">Waiting for everyone else…</p>
+      <div class="spinner" style="margin: 12px auto;"></div>
+    </section>
+
+    <!-- SCREEN 5: Result for this round -->
+    <section id="screen-result" class="hidden">
+      <div class="result-banner" id="result-banner">
+        <h2 id="result-title"></h2>
+        <p id="result-sub"></p>
+        <p class="muted">Rank: <strong id="result-rank">--</strong> &nbsp;•&nbsp; Score: <strong id="result-score">0</strong></p>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: Final -->
+    <section id="screen-final" class="hidden" style="width:100%; display:flex; flex-direction:column; gap:14px; align-items:center;">
+      <div class="brand"><h1 id="final-title">🏁 Game over!</h1></div>
+      <div class="result-banner" id="final-banner">
+        <p id="final-rank-text"></p>
+        <p class="muted">Final score: <strong id="final-score">0</strong></p>
+      </div>
+      <div class="row" style="max-width:520px; width:100%">
+        <a class="btn" href="/player.html">Play again</a>
+        <a class="btn secondary" href="/">Home</a>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/player.js"></script>
+</body>
+</html>

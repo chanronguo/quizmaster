@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Host — QuizMaster</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="center-wrap" id="root">
+
+    <!-- SCREEN 1: Setup -->
+    <section id="screen-setup" class="card">
+      <h2>Host a new quiz</h2>
+      <p class="muted">Pick a topic and we'll have AI write fresh questions for your game.</p>
+
+      <label for="topic">Topic</label>
+      <input id="topic" type="text" placeholder="e.g. Space exploration, 90s music, Python basics" maxlength="120" />
+
+      <div class="row">
+        <div>
+          <label for="count"># of questions</label>
+          <select id="count">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="7">7</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </select>
+        </div>
+        <div>
+          <label for="difficulty">Difficulty</label>
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <button class="btn" id="btn-create">Create room</button>
+      </div>
+      <p class="error" id="setup-error"></p>
+    </section>
+
+    <!-- SCREEN 2: Lobby -->
+    <section id="screen-lobby" class="card wide hidden" style="text-align:center">
+      <p class="muted">Players go to this site and enter the code:</p>
+      <div class="code-pill" id="room-code">------</div>
+      <p class="muted" style="margin-top:12px"><span id="join-url"></span></p>
+
+      <div style="margin: 18px 0;">
+        <span class="muted">Loading questions&hellip;</span>
+        <span id="questions-status"><span class="spinner" style="vertical-align:middle"></span></span>
+      </div>
+
+      <h3 style="margin-bottom:0">Players (<span id="player-count">0</span>)</h3>
+      <div class="player-list" id="player-list"></div>
+
+      <div style="margin-top:22px">
+        <button class="btn" id="btn-start" disabled>Start game</button>
+      </div>
+      <p class="error" id="lobby-error"></p>
+    </section>
+
+    <!-- SCREEN 3: Question -->
+    <section id="screen-question" class="hidden" style="display:flex; flex-direction:column; align-items:center; gap:14px; width:100%;">
+      <div class="question-bar">
+        <div class="q-meta">
+          <span>Question <strong id="q-index">1</strong> / <span id="q-total">5</span></span>
+          <span id="answer-progress">0 / 0 answered</span>
+        </div>
+        <h2 id="q-text"></h2>
+        <div class="timer" id="q-timer">--</div>
+      </div>
+      <div class="answer-grid" id="answer-grid"></div>
+    </section>
+
+    <!-- SCREEN 4: Reveal / mid-game leaderboard -->
+    <section id="screen-reveal" class="hidden" style="display:flex; flex-direction:column; align-items:center; gap:14px; width:100%;">
+      <div class="question-bar">
+        <h2 id="reveal-text"></h2>
+        <p class="muted" id="reveal-counts"></p>
+      </div>
+      <div class="leaderboard" id="reveal-leaderboard"></div>
+      <p class="muted">Next question in <span id="reveal-countdown">5</span>&hellip;</p>
+    </section>
+
+    <!-- SCREEN 5: Final -->
+    <section id="screen-final" class="hidden" style="display:flex; flex-direction:column; align-items:center; gap:14px; width:100%;">
+      <div class="brand"><h1>🏆 Game over!</h1></div>
+      <div class="podium" id="podium"></div>
+      <div class="leaderboard" id="final-leaderboard"></div>
+      <div class="row" style="max-width:520px; width:100%">
+        <a class="btn" href="/host.html">Host another</a>
+        <a class="btn secondary" href="/">Home</a>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/host.js"></script>
+</body>
+</html>
