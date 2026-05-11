@@ -56,12 +56,13 @@ function joinRoom() {
 }
 
 // --- Question ---
-socket.on('question:start', ({ index, total, durationMs, startedAt }) => {
+socket.on('question:start', ({ index, total, question, options, durationMs, startedAt }) => {
   myAnswered = false;
   show('answer');
   $('p-index').textContent = index + 1;
   $('p-total').textContent = total;
   $('p-score').textContent = `Score: ${myScore}`;
+  $('p-prompt').textContent = question || 'Pick your answer!';
 
   const grid = $('answer-grid');
   grid.innerHTML = '';
@@ -69,13 +70,20 @@ socket.on('question:start', ({ index, total, durationMs, startedAt }) => {
     const btn = document.createElement('button');
     btn.className = 'answer-btn';
     btn.setAttribute('data-color', String(i));
-    btn.innerHTML = `<span class="shape">${SHAPES[i]}</span>`;
+    const label = (options && options[i]) ? options[i] : '';
+    btn.innerHTML = `<span class="shape">${SHAPES[i]}</span><span class="label">${escapeHtml(label)}</span>`;
     btn.addEventListener('click', () => submitAnswer(index, i));
     grid.appendChild(btn);
   }
 
   startCountdown(durationMs, startedAt);
 });
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
 
 function startCountdown(durationMs, startedAt) {
   clearInterval(countdownTimer);
