@@ -32,7 +32,7 @@ function mockQuestions({ topic, count }) {
     { question: `True or false: ${topic} has a Wikipedia page.`, options: ['Definitely true', 'Probably true', 'Probably false', 'Definitely false'], correctIndex: 0 },
     { question: `If you had to summarize ${topic} in one word, which fits best?`, options: ['Fascinating', 'Tedious', 'Forgotten', 'Imaginary'], correctIndex: 0 },
     { question: `Which century saw the biggest developments in ${topic}?`, options: ['15th century', '18th century', '20th century', '21st century'], correctIndex: 2 },
-    { { question: `A friend asks you about ${topic}. What is the safest first answer?`, options: ['Let me look that up', 'It is overrated', 'I invented it', 'It does not exist'], correctIndex: 0 }, ,
+    { question: `A friend asks you about ${topic}. What is the safest first answer?`, options: ['Let me look that up', 'It is overrated', 'I invented it', 'It does not exist'], correctIndex: 0 } ,
     { question: `Pick the most plausible fact about ${topic}:`, options: ['It is studied in universities', 'It was outlawed worldwide in 1923', 'It only exists on Mars', 'It was invented yesterday'], correctIndex: 0 },
     { question: `Which discipline most often studies ${topic}?`, options: ['History or science', 'Astrology', 'Origami', 'Competitive eating'], correctIndex: 0 },
     { question: `Which of these is NOT typically related to ${topic}?`, options: ['Books', 'Research', 'Time travel paradoxes', 'Conversations'], correctIndex: 2 },
