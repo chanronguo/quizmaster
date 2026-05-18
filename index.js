@@ -6,7 +6,17 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
-const { generateQuestions, PROVIDER } = require('./ai');
+const { generateQuestions, parseCustomQuestions, PROVIDER } = require('./ai');
+
+// Validate a user-provided question object — must have text, exactly 4 options, valid correctIndex.
+function isValidQuestion(q) {
+  return q
+    && typeof q.question === 'string' && q.question.trim().length > 0
+    && Array.isArray(q.options) && q.options.length === 4
+    && q.options.every((o) => typeof o === 'string' && o.trim().length > 0)
+    && Number.isInteger(q.correctIndex)
+    && q.correctIndex >= 0 && q.correctIndex < 4;
+}
 
 const PORT = Number(process.env.PORT) || 3000;
 const QUESTION_DURATION_MS = 20_000; // 20s per question
@@ -196,6 +206,10 @@ io.on('connection', (socket) => {
         ? opts.difficulty
         : 'medium';
 
+      const mode =
+        opts?.mode === 'preset' ? 'preset' :
+        opts?.mode === 'custom' ? 'custom' : 'ai';
+
       const code = newRoomCode();
       const room = {
         code,
@@ -206,25 +220,47 @@ io.on('connection', (socket) => {
         currentIndex: -1,
         questionStartedAt: 0,
         timers: {},
-        config: { topic, count, difficulty },
+        config: { topic, count, difficulty, mode },
       };
       rooms.set(code, room);
       socket.join(`room:${code}`);
       socket.data.role = 'host';
       socket.data.roomCode = code;
 
-      ack?.({ ok: true, code, status: 'loading' });
+      ack?.({ ok: true, code, status: 'loading', mode });
       io.to(socket.id).emit('host:roomCreated', { code, config: room.config });
 
-      // Generate questions in background
-      const questions = await generateQuestions({ topic, count, difficulty });
+      // Get questions based on mode
+      let questions = [];
+      if (mode === 'preset' && Array.isArray(opts.presetQuestions)) {
+        questions = opts.presetQuestions.filter(isValidQuestion);
+        console.log(`[room ${code}] using ${questions.length} preset questions`);
+      } else if (mode === 'custom' && opts.customText) {
+        console.log(`[room ${code}] parsing custom text (${opts.customText.length} chars)…`);
+        questions = await parseCustomQuestions(opts.customText);
+        console.log(`[room ${code}] parsed ${questions.length} questions from text`);
+      } else {
+        questions = await generateQuestions({ topic, count, difficulty });
+      }
+
       const stillExists = rooms.get(code);
       if (!stillExists) return; // Host disconnected before questions came back
+
+      if (!questions || questions.length === 0) {
+        io.to(socket.id).emit('host:questionsError', {
+          message: mode === 'custom'
+            ? 'Could not parse any questions from your text. Check the format and try again.'
+            : 'Could not generate questions. Try a different topic.',
+        });
+        destroyRoom(code);
+        return;
+      }
+
       stillExists.questions = questions;
       stillExists.status = 'lobby';
       io.to(`room:${code}`).emit('room:state', publicRoomState(stillExists));
-      io.to(socket.id).emit('host:questionsReady', { count: questions.length });
-      console.log(`[room ${code}] ready (${questions.length} questions on "${topic}")`);
+      io.to(socket.id).emit('host:questionsReady', { count: questions.length, questions });
+      console.log(`[room ${code}] ready (${questions.length} questions, mode=${mode})`);
     } catch (err) {
       console.error('host:createRoom error', err);
       ack?.({ ok: false, error: err.message });

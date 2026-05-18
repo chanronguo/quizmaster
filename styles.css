@@ -509,3 +509,84 @@ input:focus, select:focus { border-color: var(--bg-1); }
   50%      { transform: scale(1) rotate(8deg); }
   75%      { transform: scale(1.15) rotate(-4deg); }
 }
+
+/* ============================================================
+   Tabs (AI generate vs Paste my own)
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 14px;
+  border-bottom: 2px solid #eef0f5;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--bg-1);
+  border-bottom-color: var(--bg-1);
+}
+
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 2px solid #d0d4e0;
+  border-radius: 10px;
+  outline: none;
+  resize: vertical;
+  min-height: 200px;
+  background: white;
+  line-height: 1.5;
+}
+textarea:focus { border-color: var(--bg-1); }
+
+/* ============================================================
+   Saved question sets cards
+   ============================================================ */
+.saved-set-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f7f8fc;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  border: 1px solid #e6e8ef;
+}
+.saved-set-card .set-info { flex: 1; min-width: 0; }
+.saved-set-card .set-name {
+  font-weight: 700;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-set-card .set-meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.saved-set-card .set-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn.small {
+  padding: 7px 14px;
+  font-size: 13px;
+  width: auto;
+}

@@ -20,39 +20,162 @@ let revealTimer = null;
 let roomCode = null;
 let questionsReady = false;
 let playerCount = 0;
+let currentGameQuestions = []; // populated from host:questionsReady, used for Save Set
+let currentGameTopic = '';
 
-// --- Setup ---
+// =================================================================
+// Tabs (AI vs Custom)
+// =================================================================
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tab-content').forEach((c) => c.classList.toggle('hidden', c.dataset.tab !== tab));
+  });
+});
+function activeTab() {
+  const el = document.querySelector('.tab-btn.active');
+  return el ? el.dataset.tab : 'ai';
+}
+
+// =================================================================
+// Saved sets (localStorage)
+// =================================================================
+const SAVED_KEY = 'chanoot_saved_sets';
+function getSavedSets() {
+  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); }
+  catch { return []; }
+}
+function persistSets(sets) {
+  localStorage.setItem(SAVED_KEY, JSON.stringify(sets));
+}
+function saveCurrentSet(name) {
+  if (!currentGameQuestions || currentGameQuestions.length === 0) return false;
+  const sets = getSavedSets();
+  sets.unshift({
+    id: Date.now().toString(),
+    name: String(name).slice(0, 80) || 'Untitled set',
+    topic: currentGameTopic || '',
+    questions: currentGameQuestions,
+    createdAt: new Date().toISOString(),
+  });
+  persistSets(sets.slice(0, 30)); // cap at 30
+  return true;
+}
+function deleteSavedSet(id) {
+  persistSets(getSavedSets().filter((s) => s.id !== id));
+  renderSavedSets();
+}
+function renderSavedSets() {
+  const sets = getSavedSets();
+  const section = $('saved-sets-section');
+  const list = $('saved-sets-list');
+  if (!section || !list) return;
+  if (sets.length === 0) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = '';
+  sets.forEach((set) => {
+    const card = document.createElement('div');
+    card.className = 'saved-set-card';
+    const dateStr = new Date(set.createdAt).toLocaleDateString();
+    card.innerHTML = `
+      <div class="set-info">
+        <div class="set-name">${escapeHtml(set.name)}</div>
+        <div class="set-meta">${set.questions.length} questions · ${dateStr}${set.topic ? ' · ' + escapeHtml(set.topic) : ''}</div>
+      </div>
+      <div class="set-actions">
+        <button class="btn small use-btn" type="button">Use</button>
+        <button class="btn small danger del-btn" type="button">Delete</button>
+      </div>
+    `;
+    card.querySelector('.use-btn').addEventListener('click', () => useSavedSet(set));
+    card.querySelector('.del-btn').addEventListener('click', () => {
+      if (confirm(`Delete "${set.name}"?`)) deleteSavedSet(set.id);
+    });
+    list.appendChild(card);
+  });
+}
+function useSavedSet(set) {
+  // Reuse the create flow but with preset questions
+  $('btn-create').disabled = true;
+  $('btn-create').textContent = 'Creating…';
+  $('setup-error').textContent = '';
+  socket.emit('host:createRoom', {
+    mode: 'preset',
+    topic: set.topic || set.name,
+    presetQuestions: set.questions,
+  }, handleCreateResp);
+}
+
+renderSavedSets();
+
+// =================================================================
+// Create room
+// =================================================================
 $('btn-create').addEventListener('click', () => {
-  const topic = $('topic').value.trim();
-  const count = Number($('count').value);
-  const difficulty = $('difficulty').value;
-  if (!topic) {
-    $('setup-error').textContent = 'Enter a topic.';
-    return;
+  const tab = activeTab();
+  let payload;
+
+  if (tab === 'custom') {
+    const customText = $('custom-text').value.trim();
+    if (!customText) {
+      $('setup-error').textContent = 'Paste some questions first.';
+      return;
+    }
+    payload = { mode: 'custom', customText, topic: 'Custom quiz' };
+  } else {
+    const topic = $('topic').value.trim();
+    const count = Number($('count').value);
+    const difficulty = $('difficulty').value;
+    if (!topic) {
+      $('setup-error').textContent = 'Enter a topic.';
+      return;
+    }
+    payload = { mode: 'ai', topic, count, difficulty };
   }
+
   $('setup-error').textContent = '';
   $('btn-create').disabled = true;
   $('btn-create').textContent = 'Creating…';
-  socket.emit('host:createRoom', { topic, count, difficulty }, (resp) => {
-    if (!resp?.ok) {
-      $('setup-error').textContent = resp?.error || 'Failed to create room';
-      $('btn-create').disabled = false;
-      $('btn-create').textContent = 'Create room';
-      return;
-    }
-    roomCode = resp.code;
-    $('room-code').textContent = resp.code;
-    $('join-url').textContent = location.origin + '/player.html  •  code ' + resp.code;
-    show('lobby');
-    music.start('lobby');
-  });
+  socket.emit('host:createRoom', payload, handleCreateResp);
 });
 
-// --- Lobby ---
-socket.on('host:questionsReady', ({ count }) => {
+function handleCreateResp(resp) {
+  if (!resp?.ok) {
+    $('setup-error').textContent = resp?.error || 'Failed to create room';
+    $('btn-create').disabled = false;
+    $('btn-create').textContent = 'Create room';
+    return;
+  }
+  roomCode = resp.code;
+  $('room-code').textContent = resp.code;
+  $('join-url').textContent = location.origin + '/player.html  •  code ' + resp.code;
+  show('lobby');
+  music.start('lobby');
+}
+
+// =================================================================
+// Lobby
+// =================================================================
+socket.on('host:questionsReady', ({ count, questions }) => {
   questionsReady = true;
   $('questions-status').innerHTML = `${count} questions ready ✓`;
+  // Capture the questions for later Save Set
+  if (Array.isArray(questions)) {
+    currentGameQuestions = questions;
+  }
   updateStartButton();
+});
+
+// Server tells us parsing/generation failed (e.g. bad custom text)
+socket.on('host:questionsError', ({ message }) => {
+  alert(message || 'Failed to prepare questions.');
+  music.stop();
+  location.href = '/host.html';
+});
+
+socket.on('host:roomCreated', ({ config }) => {
+  currentGameTopic = config?.topic || '';
 });
 socket.on('host:playerJoined', ({ name }) => {
   // animation handled via room:state list
@@ -165,6 +288,28 @@ socket.on('game:finished', ({ leaderboard, winner }) => {
   renderPodium($('podium'), leaderboard);
   renderBarChart($('final-barchart'), leaderboard);
 });
+
+// --- Save Set button on final screen ---
+const saveBtn = $('btn-save-set');
+if (saveBtn) {
+  saveBtn.addEventListener('click', () => {
+    if (!currentGameQuestions || currentGameQuestions.length === 0) {
+      alert('No questions to save.');
+      return;
+    }
+    const defaultName = currentGameTopic
+      ? `${currentGameTopic} (${currentGameQuestions.length}Q)`
+      : `Quiz set (${currentGameQuestions.length}Q)`;
+    const name = prompt('Name this question set:', defaultName);
+    if (!name) return;
+    if (saveCurrentSet(name)) {
+      saveBtn.textContent = '✅ Saved!';
+      saveBtn.disabled = true;
+    } else {
+      alert('Could not save.');
+    }
+  });
+}
 
 socket.on('room:closed', () => {
   music.stop();

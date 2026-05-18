@@ -277,4 +277,128 @@ async function generateQuestions({ topic, count = 5, difficulty = 'medium' }) {
   }
 }
 
-module.exports = { generateQuestions, PROVIDER };
+// =================================================================
+// Parse user-pasted text → structured quiz questions (via LLM)
+// =================================================================
+const PARSE_SYSTEM_PROMPT = `You are a quiz question parser.
+
+Given free-form text the user pasted (which may come from ChatGPT, DeepSeek, a doc, an email, anything), extract every multiple-choice question you can find and convert each into our structured JSON format.
+
+For each question, identify:
+1. The QUESTION TEXT.
+2. The 4 ANSWER OPTIONS. Strip any leading "A)" "B)" "1." "-" "•" markers — just the option text itself.
+3. WHICH OPTION IS CORRECT (correctIndex 0-3). Look for cues:
+   - ✓, ✔, ★, (correct), (right), (answer), "正确答案", "答案是", "the correct answer is..."
+   - "Correct: B" style markers (B = index 1)
+   - The first option being marked as the right one
+   - Bold formatting (cannot detect in plain text, ignore)
+
+If a question has FEWER than 4 options, invent plausible-but-wrong distractors so it has exactly 4. Keep the original correct one as correct.
+If a question has MORE than 4 options, keep the correct one and pick 3 most plausible distractors.
+
+If you genuinely cannot determine which is correct, default to index 0 and DO include the question — better to include than skip.
+
+Skip text that is clearly NOT a question (headers, intro paragraphs, etc.).
+
+Output language: match the input language. If input is Chinese, output Chinese.
+
+Return ONLY valid JSON, no prose, no markdown fencing.`;
+
+function parseUserPrompt(text) {
+  return `Parse the following pasted text into quiz questions. Extract as many as you can find.
+
+PASTED TEXT:
+"""
+${text.slice(0, 8000)}
+"""
+
+Return JSON in EXACTLY this shape:
+{
+  "questions": [
+    { "question": "...", "options": ["A","B","C","D"], "correctIndex": 0 }
+  ]
+}`;
+}
+
+async function callLLMForParsing(text) {
+  if (PROVIDER === 'deepseek') {
+    const key = process.env.DEEPSEEK_API_KEY;
+    if (!key) throw new Error('DEEPSEEK_API_KEY is not set');
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: PARSE_SYSTEM_PROMPT },
+          { role: 'user', content: parseUserPrompt(text) },
+        ],
+      }),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(`DeepSeek parse error ${res.status}: ${t}`); }
+    const data = await res.json();
+    return parseQuestionJson(data?.choices?.[0]?.message?.content || '');
+  }
+  if (PROVIDER === 'openai') {
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) throw new Error('OPENAI_API_KEY is not set');
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: PARSE_SYSTEM_PROMPT },
+          { role: 'user', content: parseUserPrompt(text) },
+        ],
+      }),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(`OpenAI parse error ${res.status}: ${t}`); }
+    const data = await res.json();
+    return parseQuestionJson(data?.choices?.[0]?.message?.content || '');
+  }
+  if (PROVIDER === 'anthropic') {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) throw new Error('ANTHROPIC_API_KEY is not set');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5', max_tokens: 4096,
+        system: PARSE_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: parseUserPrompt(text) }],
+      }),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(`Anthropic parse error ${res.status}: ${t}`); }
+    const data = await res.json();
+    return parseQuestionJson(data?.content?.[0]?.text || '');
+  }
+  // mock provider — return what looks parseable from text via a naive regex
+  return naiveParse(text);
+}
+
+// Very crude fallback parser when no AI is configured.
+function naiveParse(text) {
+  // Just return one example question so the user sees something works.
+  return [{
+    question: 'AI parsing requires a real provider — this is a fallback question.',
+    options: ['Set AI_PROVIDER', 'Set DEEPSEEK_API_KEY', 'Restart the server', 'All of the above'],
+    correctIndex: 3,
+  }];
+}
+
+async function parseCustomQuestions(rawText) {
+  const text = String(rawText || '').trim();
+  if (!text) return [];
+  try {
+    const questions = await callLLMForParsing(text);
+    return Array.isArray(questions) ? questions.slice(0, 50) : [];
+  } catch (err) {
+    console.error('[ai] parseCustomQuestions failed:', err.message);
+    return [];
+  }
+}
+
+module.exports = { generateQuestions, parseCustomQuestions, PROVIDER };

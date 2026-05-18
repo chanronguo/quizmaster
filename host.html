@@ -17,36 +17,81 @@
     <!-- SCREEN 1: Setup -->
     <section id="screen-setup" class="card">
       <h2>Host a new quiz</h2>
-      <p class="muted">Pick a topic and we'll have AI write fresh questions for your game.</p>
 
-      <label for="topic">Topic</label>
-      <input id="topic" type="text" placeholder="e.g. Space exploration, 90s music, Python basics" maxlength="120" />
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="ai">🤖 AI generate</button>
+        <button class="tab-btn" data-tab="custom">✍️ Paste my own</button>
+      </div>
 
-      <div class="row">
-        <div>
-          <label for="count"># of questions</label>
-          <select id="count">
-            <option value="3">3</option>
-            <option value="5" selected>5</option>
-            <option value="7">7</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-          </select>
+      <!-- AI Tab -->
+      <div class="tab-content" data-tab="ai">
+        <p class="muted" style="margin-top:6px">Pick a topic and we'll have AI write fresh questions for your game.</p>
+
+        <label for="topic">Topic</label>
+        <input id="topic" type="text" placeholder="e.g. Space exploration, 90s music, Python basics" maxlength="120" />
+
+        <div class="row">
+          <div>
+            <label for="count"># of questions</label>
+            <select id="count">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="7">7</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+          <div>
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="difficulty">Difficulty</label>
-          <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium" selected>Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
+      </div>
+
+      <!-- Custom Tab -->
+      <div class="tab-content hidden" data-tab="custom">
+        <p class="muted" style="margin-top:6px">Paste questions in any format — copied from ChatGPT, DeepSeek, a doc, whatever. AI will parse them automatically.</p>
+
+        <label for="custom-text">Your questions</label>
+        <textarea id="custom-text" rows="10" placeholder="Examples (any of these formats work):
+
+Q1: 中国的首都是哪里？
+A) 上海
+B) 北京 ✓
+C) 广州
+D) 深圳
+
+Q2: 2+2 等于几？
+- 3
+- 4 (正确)
+- 5
+- 6
+
+— or —
+
+1. What's the largest planet?
+   a. Earth
+   b. Jupiter (correct)
+   c. Mars
+   d. Saturn"></textarea>
+        <p class="muted small">Mark the correct answer with ✓, "(correct)", "(正确)", or similar. If you don't, we'll guess.</p>
       </div>
 
       <div style="margin-top:18px">
         <button class="btn" id="btn-create">Create room</button>
       </div>
       <p class="error" id="setup-error"></p>
+
+      <!-- Saved sets -->
+      <div id="saved-sets-section" class="hidden" style="margin-top:24px; padding-top:18px; border-top:2px solid #eef0f5">
+        <h3 style="margin-top:0">📚 Your saved question sets</h3>
+        <p class="muted small">Saved on this browser only.</p>
+        <div id="saved-sets-list"></div>
+      </div>
     </section>
 
     <!-- SCREEN 2: Lobby -->
@@ -98,7 +143,10 @@
       <div class="podium" id="podium"></div>
       <div class="barchart" id="final-barchart"></div>
       <div class="row" style="max-width:520px; width:100%">
-        <a class="btn" href="/host.html">Host another</a>
+        <button class="btn" id="btn-save-set">💾 Save this set</button>
+      </div>
+      <div class="row" style="max-width:520px; width:100%">
+        <a class="btn secondary" href="/host.html">Host another</a>
         <a class="btn secondary" href="/">Home</a>
       </div>
     </section>
